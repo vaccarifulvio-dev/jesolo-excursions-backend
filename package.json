@@ -1,6 +1,7 @@
-"name": "jesolo-excursions-backend",
+{
+  "name": "jesolo-excursions-backend",
   "version": "1.0.0",
-  "description": "Backend per gestione prenotazioni ed escursioni a Jesolo",
+  "description": "Backend per Jesolo Excursions",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
