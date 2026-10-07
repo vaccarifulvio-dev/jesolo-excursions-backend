@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const cors = require('cors');
+app.use(cors());
 
 // ⚠️ INSERISCI QUI LA TUA CHIAVE SEGRETA DI STRIPE (sk_test_... oppure sk_live_...)
 const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY');
