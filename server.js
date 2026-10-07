@@ -93,4 +93,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 // Avvio del server sulla porta 3000 (o quella assegnata dal provider hosting)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server Jesolo Excursions attivo sulla porta ${PORT}!`));
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server in ascolto sulla porta ${PORT}`);
+});
