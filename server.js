@@ -30,8 +30,8 @@ const EXCURSIONS_DATA = {
     },
     kayak: { 
         name: "Escursione Kayak Sile", 
-        adult: 1, 
-        child: 1, 
+        adult: 40, 
+        child: 25, 
         allowedDays: [2, 4, 6] // Martedì, Giovedì e Sabato
     }
 };
