@@ -48,6 +48,12 @@ const EXCURSIONS_DATA = {
         adult: 40, 
         child: 25, 
         allowedDays: [2, 4, 6] // Martedì, Giovedì e Sabato
+    },
+    cortina: { 
+        name: "Cortina e Dolomiti", 
+        adult: 1, 
+        child: 1, 
+        allowedDays: [2] // Solo Martedì
     }
 };
 
