@@ -1,6 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const cors = require('cors');
+
+app.use(cors()); // <--- Dev'esserci questo (abilita le chiamate esterne)
+app.use(express.json()); // Permette di leggere i dati JSON inviati da index.html
 
 // ⚠️ INSERISCI QUI LA TUA CHIAVE SEGRETA DI STRIPE (sk_test_... oppure sk_live_...)
 const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY');
