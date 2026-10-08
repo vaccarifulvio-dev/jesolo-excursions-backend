@@ -3,19 +3,21 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors');
 
-app.use(cors()); // <--- Dev'esserci questo (abilita le chiamate esterne)
-app.use(express.json()); // Permette di leggere i dati JSON inviati da index.html
-
-// ⚠️ INSERISCI QUI LA TUA CHIAVE SEGRETA DI STRIPE (sk_test_... oppure sk_live_...)
-const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY');
-
+// 1. Inizializza l'app Express
 const app = express();
 
-// Serve i file statici (index.html, css, immagini) dalla cartella attuale
-app.use(express.static(path.join(__dirname)));
+// 2. Abilita CORS e la lettura dei dati JSON
+app.use(cors());
+app.use(express.json());
 app.use(bodyParser.json());
 
-// 📋 LISTINO PREZZI E GIORNI LATO SERVER (Per sicurezza)
+// 3. Serve i file statici dalla cartella principale
+app.use(express.static(path.join(__dirname)));
+
+// 4. Inizializza Stripe leggendo la chiave dalle Environment Variables di Render
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// 📋 LISTINO PREZZI E GIORNI LATO SERVER
 // 0=Domenica, 1=Lunedì, 2=Martedì, 3=Mercoledì, 4=Giovedì, 5=Venerdì, 6=Sabato
 const EXCURSIONS_DATA = {
     venice: { 
@@ -64,7 +66,7 @@ app.post('/create-payment-intent', async (req, res) => {
             return res.status(400).json({ error: 'L\'escursione non è disponibile nella data selezionata.' });
         }
 
-        // 4. Calcolo del totale in EURO e conversione in CENTESIMI (Stripe ragiona in centesimi)
+        // 4. Calcolo del totale in EURO e conversione in CENTESIMI
         const totalEuro = (excursionInfo.adult * numAdults) + (excursionInfo.child * numChildren);
         const totalCents = totalEuro * 100;
 
@@ -74,7 +76,6 @@ app.post('/create-payment-intent', async (req, res) => {
             currency: 'eur',
             receipt_email: email,
             description: `Prenotazione: ${excursionInfo.name} per il ${date}`,
-            // Salviamo i dettagli della prenotazione nei dati di Stripe (visibili nella dashboard)
             metadata: {
                 escursione: excursionInfo.name,
                 data_escursione: date,
@@ -84,7 +85,7 @@ app.post('/create-payment-intent', async (req, res) => {
             }
         });
 
-        // Invia il token clientSecret al front-end per confermare il pagamento
+        // Invia il token clientSecret al front-end
         res.json({ clientSecret: paymentIntent.client_secret });
 
     } catch (e) {
@@ -93,6 +94,8 @@ app.post('/create-payment-intent', async (req, res) => {
     }
 });
 
-// Avvio del server sulla porta 3000 (o quella assegnata dal provider hosting)
+// Avvio del server sulla porta dinamica di Render e binding su 0.0.0.0
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server Jesolo Excursions attivo sulla porta ${PORT}!`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server Jesolo Excursions attivo sulla porta ${PORT}!`);
+});
