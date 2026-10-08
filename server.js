@@ -109,7 +109,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
         resend.emails.send({
             from: emailFrom,
-            to: [email, 'info@jesoloexcursions.eu'],
+            to: [email, 'vaccari.fulvio@gmail.com'],
             subject: `Conferma Prenotazione - ${excursionInfo.name}`,
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
