@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 // 1. Inizializza l'app Express
 const app = express();
@@ -15,29 +15,11 @@ app.use(bodyParser.json());
 // 3. Serve i file statici dalla cartella principale
 app.use(express.static(path.join(__dirname)));
 
-// 4. Inizializza Stripe leggendo la chiave dalle Environment Variables di Render
+// 4. Inizializza Stripe e Resend tramite le variabili d'ambiente di Render
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-// 5. Configurazione Trasportatore Email Aruba SMTP (Ottimizzata per evitare Connection Timeout)
-const transporter = nodemailer.createTransport({
-    host: 'smtps.aruba.it',
-    port: 587,
-    secure: false, // false per porta 587 (usa STARTTLS)
-    auth: {
-        user: 'info@jesoloexcursions.eu',
-        pass: process.env.ARUBA_MAIL_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, // 10 secondi per stabilire la connessione
-    greetingTimeout: 10000,   // 10 secondi per la risposta di benvenuto SMTP
-    socketTimeout: 15000      // 15 secondi di inattività max prima di chiudere il socket
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 📋 LISTINO PREZZI, GIORNI E MESI LATO SERVER
-// allowedDays: 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab
-// allowedMonths: 1=Gen, 2=Feb ... 5=Maggio ... 10=Ottobre
 const EXCURSIONS_DATA = {
     venice: { 
         name: "Venezia & Isole", 
@@ -120,10 +102,14 @@ app.post('/create-payment-intent', async (req, res) => {
             }
         });
 
-        // 6. Invio Email di conferma via Aruba SMTP
-        const mailOptions = {
-            from: '"Jesolo Excursions" <info@jesoloexcursions.eu>',
-            to: `${email}, info@jesoloexcursions.eu`, // Invia una copia anche a te!
+        // 6. Invio Email di conferma via Resend API (HTTP HTTPS - Porta 443)
+        // Nota: Resend di default permette l'invio da 'onboarding@resend.dev' durante i test.
+        // Quando verificherai il tuo dominio jesoloexcursions.eu su Resend, potrai usare 'info@jesoloexcursions.eu'
+        const emailFrom = process.env.RESEND_FROM_EMAIL || 'Jesolo Excursions <onboarding@resend.dev>';
+
+        resend.emails.send({
+            from: emailFrom,
+            to: [email, 'info@jesoloexcursions.eu'],
             subject: `Conferma Prenotazione - ${excursionInfo.name}`,
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
@@ -156,15 +142,10 @@ app.post('/create-payment-intent', async (req, res) => {
                     <p style="font-size: 12px; color: #777; text-align: center;">Jesolo Excursions - info@jesoloexcursions.eu</p>
                 </div>
             `
-        };
-
-        // Invio asincrono dell'email
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error("Errore nell'invio dell'email di conferma:", error);
-            } else {
-                console.log("Email di conferma inviata con successo:", info.response);
-            }
+        }).then(response => {
+            console.log("Email inviata con successo via Resend:", response);
+        }).catch(err => {
+            console.error("Errore invio email via Resend:", err);
         });
 
         // Invia il token clientSecret al front-end
