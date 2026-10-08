@@ -1,8 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const cors = require('cors');
-app.use(cors());
 
 // ⚠️ INSERISCI QUI LA TUA CHIAVE SEGRETA DI STRIPE (sk_test_... oppure sk_live_...)
 const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY');
@@ -30,8 +28,8 @@ const EXCURSIONS_DATA = {
     },
     kayak: { 
         name: "Escursione Kayak Sile", 
-        adult: 1, 
-        child: 1, 
+        adult: 40, 
+        child: 25, 
         allowedDays: [2, 4, 6] // Martedì, Giovedì e Sabato
     }
 };
@@ -93,7 +91,4 @@ app.post('/create-payment-intent', async (req, res) => {
 
 // Avvio del server sulla porta 3000 (o quella assegnata dal provider hosting)
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server in ascolto sulla porta ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server Jesolo Excursions attivo sulla porta ${PORT}!`));
