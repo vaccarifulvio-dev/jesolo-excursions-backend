@@ -21,12 +21,16 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // 5. Configurazione Trasportatore Email Aruba SMTP
 const transporter = nodemailer.createTransport({
     host: 'smtps.aruba.it',
-    port: 465,
-    secure: true, // SSL/TLS
+    port: 587,
+    secure: false, // false per porta 587
     auth: {
         user: 'info@jesoloexcursions.eu',
         pass: process.env.ARUBA_MAIL_PASSWORD
-    }
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 10000
 });
 
 // 📋 LISTINO PREZZI E GIORNI LATO SERVER
