@@ -18,11 +18,11 @@ app.use(express.static(path.join(__dirname)));
 // 4. Inizializza Stripe leggendo la chiave dalle Environment Variables di Render
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// 5. Configurazione Trasportatore Email Aruba SMTP
+// 5. Configurazione Trasportatore Email Aruba SMTP (Ottimizzata per evitare Connection Timeout)
 const transporter = nodemailer.createTransport({
     host: 'smtps.aruba.it',
     port: 587,
-    secure: false, // false per porta 587
+    secure: false, // false per porta 587 (usa STARTTLS)
     auth: {
         user: 'info@jesoloexcursions.eu',
         pass: process.env.ARUBA_MAIL_PASSWORD
@@ -30,34 +30,42 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    connectionTimeout: 10000
+    connectionTimeout: 10000, // 10 secondi per stabilire la connessione
+    greetingTimeout: 10000,   // 10 secondi per la risposta di benvenuto SMTP
+    socketTimeout: 15000      // 15 secondi di inattività max prima di chiudere il socket
 });
 
-// 📋 LISTINO PREZZI E GIORNI LATO SERVER
+// 📋 LISTINO PREZZI, GIORNI E MESI LATO SERVER
+// allowedDays: 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab
+// allowedMonths: 1=Gen, 2=Feb ... 5=Maggio ... 10=Ottobre
 const EXCURSIONS_DATA = {
     venice: { 
         name: "Venezia & Isole", 
         adult: 35, 
         child: 20, 
-        allowedDays: [3] // Solo Mercoledì
+        allowedDays: [3], // Solo Mercoledì
+        allowedMonths: [5, 6, 7, 8, 9, 10] // Maggio - Ottobre
     },
     lagoon: { 
         name: "Tour della Laguna al Tramonto", 
         adult: 25, 
         child: 15, 
-        allowedDays: [1, 5] // Lunedì e Venerdì
+        allowedDays: [1, 5], // Lunedì e Venerdì
+        allowedMonths: [5, 6, 7, 8, 9, 10] // Maggio - Ottobre
     },
     kayak: { 
         name: "Escursione Kayak Sile", 
         adult: 40, 
         child: 25, 
-        allowedDays: [2, 4, 6] // Martedì, Giovedì e Sabato
+        allowedDays: [2, 4, 6], // Martedì, Giovedì e Sabato
+        allowedMonths: [6, 7, 8, 9] // Giugno - Settembre
     },
     cortina: { 
         name: "Cortina e Dolomiti", 
         adult: 1, 
         child: 1, 
-        allowedDays: [2] // Solo Martedì
+        allowedDays: [2], // Solo Martedì
+        allowedMonths: [5, 6, 7, 8, 9, 10] // Maggio - Ottobre
     }
 };
 
@@ -80,9 +88,15 @@ app.post('/create-payment-intent', async (req, res) => {
             return res.status(400).json({ error: 'È necessario selezionare almeno un adulto.' });
         }
 
-        // 3. Controllo sicurezza giorno della settimana
+        // 3. Controllo sicurezza data (Giorno della settimana e Mese)
         const selectedDate = new Date(date);
         const dayOfWeek = selectedDate.getUTCDay();
+        const month = selectedDate.getUTCMonth() + 1; // 1-12
+
+        if (excursionInfo.allowedMonths && !excursionInfo.allowedMonths.includes(month)) {
+            return res.status(400).json({ error: 'L\'escursione non è disponibile nel mese selezionato.' });
+        }
+
         if (!excursionInfo.allowedDays.includes(dayOfWeek)) {
             return res.status(400).json({ error: 'L\'escursione non è disponibile nella data selezionata.' });
         }
