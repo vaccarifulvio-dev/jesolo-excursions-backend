@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
 
 // 1. Inizializza l'app Express
 const app = express();
@@ -17,8 +18,18 @@ app.use(express.static(path.join(__dirname)));
 // 4. Inizializza Stripe leggendo la chiave dalle Environment Variables di Render
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// 5. Configurazione Trasportatore Email Aruba SMTP
+const transporter = nodemailer.createTransport({
+    host: 'smtps.aruba.it',
+    port: 465,
+    secure: true, // SSL/TLS
+    auth: {
+        user: 'info@jesoloexcursions.eu',
+        pass: process.env.ARUBA_MAIL_PASSWORD
+    }
+});
+
 // 📋 LISTINO PREZZI E GIORNI LATO SERVER
-// 0=Domenica, 1=Lunedì, 2=Martedì, 3=Mercoledì, 4=Giovedì, 5=Venerdì, 6=Sabato
 const EXCURSIONS_DATA = {
     venice: { 
         name: "Venezia & Isole", 
@@ -40,7 +51,7 @@ const EXCURSIONS_DATA = {
     }
 };
 
-// 💳 API PER CREARE IL PAGAMENTO SU STRIPE
+// 💳 API PER CREARE IL PAGAMENTO SU STRIPE E INVIARE EMAIL
 app.post('/create-payment-intent', async (req, res) => {
     try {
         const { excursion, adults, children, email, date } = req.body;
@@ -85,6 +96,53 @@ app.post('/create-payment-intent', async (req, res) => {
             }
         });
 
+        // 6. Invio Email di conferma via Aruba SMTP
+        const mailOptions = {
+            from: '"Jesolo Excursions" <info@jesoloexcursions.eu>',
+            to: `${email}, info@jesoloexcursions.eu`, // Invia una copia anche a te!
+            subject: `Conferma Prenotazione - ${excursionInfo.name}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                    <h2 style="color: #0056b3; text-align: center;">Conferma di Prenotazione</h2>
+                    <p>Gentile cliente,</p>
+                    <p>Grazie per aver prenotato con <strong>Jesolo Excursions</strong>! Di seguito trovi i dettagli della tua prenotazione:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Escursione:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${excursionInfo.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Data:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Partecipanti:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${numAdults} Adulti, ${numChildren} Bambini</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Totale Pagato:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>€${totalEuro.toFixed(2)}</strong></td>
+                        </tr>
+                    </table>
+
+                    <p>Ti preghiamo di presentarti al punto di ritrovo 15 minuti prima dell'orario di partenza.</p>
+                    <p>Per qualsiasi informazione puoi rispondere direttamente a questa email.</p>
+                    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #777; text-align: center;">Jesolo Excursions - info@jesoloexcursions.eu</p>
+                </div>
+            `
+        };
+
+        // Invio asincrono dell'email
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error("Errore nell'invio dell'email di conferma:", error);
+            } else {
+                console.log("Email di conferma inviata con successo:", info.response);
+            }
+        });
+
         // Invia il token clientSecret al front-end
         res.json({ clientSecret: paymentIntent.client_secret });
 
@@ -94,7 +152,7 @@ app.post('/create-payment-intent', async (req, res) => {
     }
 });
 
-// Avvio del server sulla porta dinamica di Render e binding su 0.0.0.0
+// Avvio del server sulla porta dinamica di Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server Jesolo Excursions attivo sulla porta ${PORT}!`);
