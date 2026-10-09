@@ -105,11 +105,11 @@ app.post('/create-payment-intent', async (req, res) => {
         // 6. Invio Email di conferma via Resend API (HTTP HTTPS - Porta 443)
         // Nota: Resend di default permette l'invio da 'onboarding@resend.dev' durante i test.
         // Quando verificherai il tuo dominio jesoloexcursions.eu su Resend, potrai usare 'info@jesoloexcursions.eu'
-        const emailFrom = process.env.RESEND_FROM_EMAIL || 'Jesolo Excursions <onboarding@resend.dev>';
+        const emailFrom = 'Jesolo Excursions <info@jesoloexcursions.eu>';
 
         resend.emails.send({
             from: emailFrom,
-            to: [email, 'vaccari.fulvio@gmail.com'],
+            to: [email, 'info@jesoloexcursions.eu'],
             subject: `Conferma Prenotazione - ${excursionInfo.name}`,
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
