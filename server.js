@@ -99,7 +99,7 @@ app.post('/create-payment-intent', async (req, res) => {
                 data_escursione: date,
                 adulti: numAdults,
                 bambini: numChildren,
-                email_cliente: email
+                email_cliente: email,
                 telefono_cliente: phone || 'Non specificato',
                 note: notes || 'Nessuna nota'
             }
