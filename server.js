@@ -54,7 +54,7 @@ const EXCURSIONS_DATA = {
 // 💳 API PER CREARE IL PAGAMENTO SU STRIPE E INVIARE EMAIL
 app.post('/create-payment-intent', async (req, res) => {
     try {
-        const { excursion, adults, children, email, date } = req.body;
+        const { excursion, adults, children, email, phone, notes, date } = req.body;
 
         // 1. Verifica che l'escursione esista
         const excursionInfo = EXCURSIONS_DATA[excursion];
@@ -129,6 +129,14 @@ app.post('/create-payment-intent', async (req, res) => {
                         <tr style="background-color: #f8f9fa;">
                             <td style="padding: 10px; border: 1px solid #ddd;"><strong>Partecipanti:</strong></td>
                             <td style="padding: 10px; border: 1px solid #ddd;">${numAdults} Adulti, ${numChildren} Bambini</td>
+                        </tr>
+                        <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Telefono:</strong></td>
+                         <td style="padding: 10px; border: 1px solid #ddd;">${phone || 'Non specificato'}</td>
+                        </tr>
+                        <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Note:</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${notes || 'Nessuna nota'}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd;"><strong>Totale Pagato:</strong></td>
