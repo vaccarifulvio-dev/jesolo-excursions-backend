@@ -54,7 +54,7 @@ const EXCURSIONS_DATA = {
 // 💳 API PER CREARE IL PAGAMENTO SU STRIPE E INVIARE EMAIL
 app.post('/create-payment-intent', async (req, res) => {
     try {
-        const { excursion, adults, children, email, phone, notes, date } = req.body;
+        const { excursion, adults, children, email, fullname, phone, notes, date } = req.body;
 
         // 1. Verifica che l'escursione esista
         const excursionInfo = EXCURSIONS_DATA[excursion];
@@ -94,11 +94,14 @@ app.post('/create-payment-intent', async (req, res) => {
             receipt_email: email,
             description: `Prenotazione: ${excursionInfo.name} per il ${date}`,
             metadata: {
+                cliente: fullname || 'Non specificato',
                 escursione: excursionInfo.name,
                 data_escursione: date,
                 adulti: numAdults,
                 bambini: numChildren,
                 email_cliente: email
+                telefono_cliente: phone || 'Non specificato',
+                note: notes || 'Nessuna nota'
             }
         });
 
@@ -114,7 +117,7 @@ app.post('/create-payment-intent', async (req, res) => {
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <h2 style="color: #0056b3; text-align: center;">Conferma di Prenotazione</h2>
-                    <p>Gentile cliente,</p>
+                    <p>Gentile <strong>${fullname || 'cliente'}</strong>,</p>
                     <p>Grazie per aver prenotato con <strong>Jesolo Excursions</strong>! Di seguito trovi i dettagli della tua prenotazione:</p>
                     
                     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -129,6 +132,10 @@ app.post('/create-payment-intent', async (req, res) => {
                         <tr style="background-color: #f8f9fa;">
                             <td style="padding: 10px; border: 1px solid #ddd;"><strong>Partecipanti:</strong></td>
                             <td style="padding: 10px; border: 1px solid #ddd;">${numAdults} Adulti, ${numChildren} Bambini</td>
+                        </tr>
+                        <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Nome e Cognome:</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${fullname || 'Non specificato'}</td>
                         </tr>
                         <tr>
                         <td style="padding: 10px; border: 1px solid #ddd;"><strong>Telefono:</strong></td>
